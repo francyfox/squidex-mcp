@@ -1,3 +1,4 @@
+import { readFile } from "node:fs/promises";
 import { DEFAULT_REQUEST_TIMEOUT_MS } from "@/squidex/constants";
 import { ConfigError } from "@/squidex/errors";
 import { configFileSchema, envProfileSchema, type SquidexConfigFile, type SquidexProfile } from "./profile-schema";
@@ -20,12 +21,17 @@ const ENV_PROFILE_NAME = "default";
 const ENV_VAR_NAMES = ["SQUIDEX_URL", "SQUIDEX_APP", "SQUIDEX_CLIENT_ID", "SQUIDEX_CLIENT_SECRET"] as const;
 
 async function loadConfigFile(path: string): Promise<SquidexConfigFile | undefined> {
-  const file = Bun.file(path);
-  if (!(await file.exists())) return undefined;
+  let contents: string;
+  try {
+    contents = await readFile(path, "utf-8");
+  } catch (err) {
+    if (err instanceof Error && "code" in err && err.code === "ENOENT") return undefined;
+    throw new ConfigError(`Failed to read ${path}: ${(err as Error).message}`);
+  }
 
   let raw: unknown;
   try {
-    raw = await file.json();
+    raw = JSON.parse(contents);
   } catch (err) {
     throw new ConfigError(`Failed to parse ${path} as JSON: ${(err as Error).message}`);
   }

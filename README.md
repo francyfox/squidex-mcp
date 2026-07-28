@@ -24,29 +24,9 @@ It can target multiple Squidex apps/instances (e.g. prod + staging) from one run
 
 ## Quick start (no coding required)
 
-You don't need Bun, Node, or git for this — just a downloaded binary and your Squidex credentials.
+The easiest way to run it is via `npx` — no download, no build step, just a Node.js install (which most machines already have).
 
-### 1. Download the binary
-
-Go to the [Releases page](https://github.com/francyfox/squidex-mcp/releases/latest) and download the file matching your OS:
-
-| OS | File |
-|---|---|
-| Linux (x64) | `squidex-mcp-linux-x64` |
-| Linux (ARM64) | `squidex-mcp-linux-arm64` |
-| macOS (Intel) | `squidex-mcp-darwin-x64` |
-| macOS (Apple Silicon) | `squidex-mcp-darwin-arm64` |
-| Windows (x64) | `squidex-mcp-windows-x64.exe` |
-
-On macOS/Linux, make it executable:
-
-```bash
-chmod +x ~/Downloads/squidex-mcp-<your-platform>
-```
-
-macOS may block the first run since the binary isn't notarized — either right-click it and choose "Open" once, or run `xattr -d com.apple.quarantine ~/Downloads/squidex-mcp-<your-platform>`.
-
-### 2. Get your Squidex credentials
+### 1. Get your Squidex credentials
 
 In your Squidex app: **Settings → Clients** → create (or copy) a client. You need:
 - your Squidex URL (e.g. `https://cloud.squidex.io`)
@@ -54,7 +34,7 @@ In your Squidex app: **Settings → Clients** → create (or copy) a client. You
 - the client ID (looks like `your-app-name:default`)
 - the client secret
 
-### 3. Register the server with your MCP client
+### 2. Register the server with your MCP client
 
 **Claude Code:**
 
@@ -66,10 +46,10 @@ claude mcp add \
   --env SQUIDEX_CLIENT_SECRET=your-client-secret \
   --transport stdio squidex \
   --scope user \
-  -- /absolute/path/to/squidex-mcp-<your-platform>
+  -- npx -y squidex-mcp
 ```
 
-`--scope user` makes it available in every project, not just the current one.
+`--scope user` makes it available in every project, not just the current one. `-y` stops `npx` from pausing on an interactive "ok to install?" prompt, which would otherwise hang the connection on first run.
 
 **Claude Desktop:** edit *Claude Desktop's own* config file for your OS (this is Claude Desktop's launcher config, not `squidex.config.json` from [Profiles](#profiles-multiple-squidex-instances) below — the `env` block here just sets environment variables for the process Claude Desktop spawns) —
 macOS: `~/Library/Application Support/Claude/claude_desktop_config.json` ·
@@ -80,7 +60,8 @@ Linux: `~/.config/Claude/claude_desktop_config.json`
 {
   "mcpServers": {
     "squidex": {
-      "command": "/absolute/path/to/squidex-mcp-<your-platform>",
+      "command": "npx",
+      "args": ["-y", "squidex-mcp"],
       "env": {
         "SQUIDEX_URL": "https://cloud.squidex.io",
         "SQUIDEX_APP": "your-app-name",
@@ -94,9 +75,23 @@ Linux: `~/.config/Claude/claude_desktop_config.json`
 
 Restart the client after editing.
 
-### 4. Try it
+### 3. Try it
 
 Ask your assistant something like *"List the content schemas in my Squidex app"*. If it replies with your schemas, it's working.
+
+### Alternative: standalone binary (no Node.js needed)
+
+If Node.js/npx isn't available, download a prebuilt binary from the [Releases page](https://github.com/francyfox/squidex-mcp/releases/latest) instead:
+
+| OS | File |
+|---|---|
+| Linux (x64) | `squidex-mcp-linux-x64` |
+| Linux (ARM64) | `squidex-mcp-linux-arm64` |
+| macOS (Intel) | `squidex-mcp-darwin-x64` |
+| macOS (Apple Silicon) | `squidex-mcp-darwin-arm64` |
+| Windows (x64) | `squidex-mcp-windows-x64.exe` |
+
+Make it executable on macOS/Linux (`chmod +x ~/Downloads/squidex-mcp-<your-platform>`; macOS may also require `xattr -d com.apple.quarantine <file>` since it isn't notarized), then use its absolute path as `command` instead of `npx` in the config above (and drop the `args`/`-y` bits, which are npx-specific).
 
 ## Profiles (multiple Squidex instances)
 
@@ -130,7 +125,7 @@ bun run dev             # start the server with --watch, for local development
 
 Point your MCP client at `bun run src/index.ts` in this directory instead of a downloaded binary while developing.
 
-To build standalone binaries locally: `bun run build:binary` compiles for your current OS only (`dist/squidex-mcp`); `bun run build:binary:all` cross-compiles all five release targets at once (`dist/squidex-mcp-<platform>`) — the same command [`release.yml`](.github/workflows/release.yml) runs when a tag is pushed.
+`bun run build` produces the Node-targeted `dist/index.js` that gets published to npm (dependencies stay external — installed normally via npm/npx, not bundled). Separately, `bun run build:binary` compiles a standalone binary for your current OS only (`dist/squidex-mcp`); `bun run build:binary:all` cross-compiles all five release targets at once (`dist/squidex-mcp-<platform>`) — the same command [`release.yml`](.github/workflows/release.yml) runs when a tag is pushed.
 
 ### Local Squidex for end-to-end testing
 
@@ -148,11 +143,11 @@ bun run scripts/smoke.ts                # or drive the tools directly via an MCP
 
 ### Releasing
 
-Pushing a tag matching `v*.*.*` triggers [`.github/workflows/release.yml`](.github/workflows/release.yml): it runs the test suite, cross-compiles standalone binaries for Linux/macOS/Windows, and publishes them to a GitHub Release.
+Pushing a tag matching `v*.*.*` triggers [`.github/workflows/release.yml`](.github/workflows/release.yml): it runs the test suite, publishes the package to npm, cross-compiles standalone binaries for Linux/macOS/Windows, and attaches them to a GitHub Release.
 
 ```bash
 git tag v0.2.0
 git push origin v0.2.0
 ```
 
-.
+Publishing to npm requires an `NPM_TOKEN` repository secret (an npm "Automation" token from [npmjs.com](https://www.npmjs.com) → Access Tokens) under **Settings → Secrets and variables → Actions** — the workflow will fail at the publish step without it.

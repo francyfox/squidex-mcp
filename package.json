@@ -1,22 +1,39 @@
 {
   "name": "squidex-mcp",
-  "version": "0.2.0",
+  "version": "0.3.0",
+  "description": "MCP server for managing Squidex CMS content and schemas from AI agents",
   "module": "src/index.ts",
   "type": "module",
   "private": false,
   "license": "MIT",
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "mcp-server",
+    "squidex",
+    "cms",
+    "claude"
+  ],
   "repository": {
     "type": "git",
     "url": "https://github.com/francyfox/squidex-mcp"
   },
+  "homepage": "https://github.com/francyfox/squidex-mcp#readme",
   "bin": {
-    "squidex-mcp": "./src/index.ts"
+    "squidex-mcp": "./dist/index.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "node": ">=18"
   },
   "scripts": {
     "dev": "bun --watch run src/index.ts",
     "start": "bun run src/index.ts",
     "typecheck": "tsc --noEmit",
     "test": "bun test",
+    "build": "bun build src/index.ts --target=node --outdir=dist --packages=external",
     "build:binary": "bun build src/index.ts --compile --outfile dist/squidex-mcp",
     "build:binary:linux-x64": "bun build src/index.ts --compile --target=bun-linux-x64 --outfile dist/squidex-mcp-linux-x64",
     "build:binary:linux-arm64": "bun build src/index.ts --compile --target=bun-linux-arm64 --outfile dist/squidex-mcp-linux-arm64",
