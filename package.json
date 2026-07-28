@@ -1,6 +1,6 @@
 {
   "name": "@shalotts/squidex-mcp",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "description": "MCP server for managing Squidex CMS content and schemas from AI agents",
   "module": "src/index.ts",
   "type": "module",
