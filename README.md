@@ -11,13 +11,22 @@ An MCP (Model Context Protocol) server that lets AI agents read and write [Squid
 | Tool | Purpose |
 |---|---|
 | `schema_list` | List content schemas in the app |
-| `schema_get` | Get a schema's fields, including localization mode |
+| `schema_get` | Get a schema's fields, including field ids and localization mode |
+| `schema_create` | Create a new content schema |
+| `schema_add_field` | Add a field to a schema (including nested Array/Component fields) |
+| `schema_update_field` | Replace a field's properties |
+| `schema_publish` | Publish a schema so content can be created against it |
+| `schema_delete` | Delete a schema — for discarding a failed design iteration |
 | `content_query` | Query content items (OData-style `filter`/`top`/`skip`/`orderby`/`search`) |
 | `content_get` | Get a single content item |
 | `content_create` | Create a content item |
 | `content_update` | Replace a content item's data |
 | `content_delete` | Delete a content item |
 | `content_change_status` | Change workflow status (Draft/Published/Archived) |
+| `asset_list` | List/query the asset library |
+| `asset_get` | Get a single asset's metadata by id |
+| `asset_upload` | Upload a new asset from a local file or a remote URL |
+| `language_list` | List the app's configured languages, for partitioning localized fields |
 | `profile_list` | List configured Squidex profiles (no secrets) |
 
 It can target multiple Squidex apps/instances (e.g. prod + staging) from one running server — every tool takes an optional `profile` parameter, switchable without restarting the server. See [Profiles](#profiles-multiple-squidex-instances) below.
@@ -112,7 +121,7 @@ Every tool accepts an optional `profile` parameter to pick which target to use �
 
 By default the server looks for `squidex.config.json` in its current working directory; point it elsewhere with the `SQUIDEX_MCP_CONFIG` env var (absolute path recommended, since the client process's working directory isn't always predictable). If no config file is found at all, the four `SQUIDEX_*` env vars from Quick start are used as a single implicit `default` profile.
 
-Content field data must already be shaped per Squidex's partitioning (`{ "title": { "iv": "..." } }` for invariant fields, `{ "en": "...", "de": "..." }` for localized ones) — call `schema_get` first to see each field's mode.
+Content field data must already be shaped per Squidex's partitioning (`{ "title": { "iv": "..." } }` for invariant fields, `{ "en": "...", "de": "..." }` for localized ones) — call `schema_get` first to see each field's mode, and `language_list` to see which language codes are actually configured on the app.
 
 ## Development
 
