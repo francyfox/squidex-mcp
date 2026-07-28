@@ -46,7 +46,7 @@ claude mcp add \
   --env SQUIDEX_CLIENT_SECRET=your-client-secret \
   --transport stdio squidex \
   --scope user \
-  -- npx -y squidex-mcp
+  -- npx -y @shalotts/squidex-mcp
 ```
 
 `--scope user` makes it available in every project, not just the current one. `-y` stops `npx` from pausing on an interactive "ok to install?" prompt, which would otherwise hang the connection on first run.
@@ -61,7 +61,7 @@ Linux: `~/.config/Claude/claude_desktop_config.json`
   "mcpServers": {
     "squidex": {
       "command": "npx",
-      "args": ["-y", "squidex-mcp"],
+      "args": ["-y", "@shalotts/squidex-mcp"],
       "env": {
         "SQUIDEX_URL": "https://cloud.squidex.io",
         "SQUIDEX_APP": "your-app-name",
@@ -150,4 +150,4 @@ git tag v0.2.0
 git push origin v0.2.0
 ```
 
-Publishing to npm requires an `NPM_TOKEN` repository secret (an npm "Automation" token from [npmjs.com](https://www.npmjs.com) → Access Tokens) under **Settings → Secrets and variables → Actions** — the workflow will fail at the publish step without it.
+Publishing to npm uses [Trusted Publishing](https://docs.npmjs.com/trusted-publishers) (OIDC) — no token/secret needed. One-time setup: publish the first version manually (`npm login && npm publish --access public`, since Trusted Publisher configuration requires the package to already exist), then on the package's npmjs.com settings add a Trusted Publisher pointing at this repo (`francyfox/squidex-mcp`) and workflow file (`release.yml`). After that, every tag push publishes automatically.
