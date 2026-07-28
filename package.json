@@ -3,7 +3,12 @@
   "version": "0.1.0",
   "module": "src/index.ts",
   "type": "module",
-  "private": true,
+  "private": false,
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/francyfox/squidex-mcp"
+  },
   "bin": {
     "squidex-mcp": "./src/index.ts"
   },
@@ -12,7 +17,13 @@
     "start": "bun run src/index.ts",
     "typecheck": "tsc --noEmit",
     "test": "bun test",
-    "build:binary": "bun build src/index.ts --compile --outfile dist/squidex-mcp"
+    "build:binary": "bun build src/index.ts --compile --outfile dist/squidex-mcp",
+    "build:binary:linux-x64": "bun build src/index.ts --compile --target=bun-linux-x64 --outfile dist/squidex-mcp-linux-x64",
+    "build:binary:linux-arm64": "bun build src/index.ts --compile --target=bun-linux-arm64 --outfile dist/squidex-mcp-linux-arm64",
+    "build:binary:darwin-x64": "bun build src/index.ts --compile --target=bun-darwin-x64 --outfile dist/squidex-mcp-darwin-x64",
+    "build:binary:darwin-arm64": "bun build src/index.ts --compile --target=bun-darwin-arm64 --outfile dist/squidex-mcp-darwin-arm64",
+    "build:binary:windows-x64": "bun build src/index.ts --compile --target=bun-windows-x64 --outfile dist/squidex-mcp-windows-x64.exe",
+    "build:binary:all": "bun run build:binary:linux-x64 && bun run build:binary:linux-arm64 && bun run build:binary:darwin-x64 && bun run build:binary:darwin-arm64 && bun run build:binary:windows-x64"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.30.0",

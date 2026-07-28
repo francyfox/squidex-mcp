@@ -1,27 +1,106 @@
-# squidex-mcp
+# squidex-mcp (non-official)
 
-An MCP (Model Context Protocol) server that exposes Squidex CMS content and schemas as tools for AI agents. MCP is an open, model-agnostic protocol — any compliant client works (Claude Code/Desktop, Cursor, Windsurf, custom agents on any model), not just Anthropic's. Built on [Bun](https://bun.com) for fast, dependency-free startup — each agent session spawns its own server process over stdio.
+[![CI](https://github.com/francyfox/squidex-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/francyfox/squidex-mcp/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/francyfox/squidex-mcp)](https://github.com/francyfox/squidex-mcp/releases/latest)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-## Setup
+An MCP (Model Context Protocol) server that lets AI agents read and write [Squidex](https://squidex.io) CMS content directly. MCP is an open, model-agnostic protocol — any compliant client works (Claude Code, Claude Desktop, Cursor, Windsurf, custom agents on any model), not just Anthropic's. Built on [Bun](https://bun.com) for fast, dependency-free startup — each agent session spawns its own server process over stdio.
+
+## What it can do
+
+| Tool | Purpose |
+|---|---|
+| `schema_list` | List content schemas in the app |
+| `schema_get` | Get a schema's fields, including localization mode |
+| `content_query` | Query content items (OData-style `filter`/`top`/`skip`/`orderby`/`search`) |
+| `content_get` | Get a single content item |
+| `content_create` | Create a content item |
+| `content_update` | Replace a content item's data |
+| `content_delete` | Delete a content item |
+| `content_change_status` | Change workflow status (Draft/Published/Archived) |
+| `profile_list` | List configured Squidex profiles (no secrets) |
+
+It can target multiple Squidex apps/instances (e.g. prod + staging) from one running server — every tool takes an optional `profile` parameter, switchable without restarting the server. See [Profiles](#profiles-multiple-squidex-instances) below.
+
+## Quick start (no coding required)
+
+You don't need Bun, Node, or git for this — just a downloaded binary and your Squidex credentials.
+
+### 1. Download the binary
+
+Go to the [Releases page](https://github.com/francyfox/squidex-mcp/releases/latest) and download the file matching your OS:
+
+| OS | File |
+|---|---|
+| Linux (x64) | `squidex-mcp-linux-x64` |
+| Linux (ARM64) | `squidex-mcp-linux-arm64` |
+| macOS (Intel) | `squidex-mcp-darwin-x64` |
+| macOS (Apple Silicon) | `squidex-mcp-darwin-arm64` |
+| Windows (x64) | `squidex-mcp-windows-x64.exe` |
+
+On macOS/Linux, make it executable:
 
 ```bash
-bun install
-cp squidex.config.example.json squidex.config.json
-# edit squidex.config.json with your Squidex app(s) — see "Profiles" below
+chmod +x ~/Downloads/squidex-mcp-<your-platform>
 ```
 
-## Run
+macOS may block the first run since the binary isn't notarized — either right-click it and choose "Open" once, or run `xattr -d com.apple.quarantine ~/Downloads/squidex-mcp-<your-platform>`.
+
+### 2. Get your Squidex credentials
+
+In your Squidex app: **Settings → Clients** → create (or copy) a client. You need:
+- your Squidex URL (e.g. `https://cloud.squidex.io`)
+- your app name
+- the client ID (looks like `your-app-name:default`)
+- the client secret
+
+### 3. Register the server with your MCP client
+
+**Claude Code:**
 
 ```bash
-bun run start        # start the MCP server (stdio transport)
-bun run dev           # start with --watch for local development
+claude mcp add \
+  --env SQUIDEX_URL=https://cloud.squidex.io \
+  --env SQUIDEX_APP=your-app-name \
+  --env SQUIDEX_CLIENT_ID=your-app-name:default \
+  --env SQUIDEX_CLIENT_SECRET=your-client-secret \
+  --transport stdio squidex \
+  --scope user \
+  -- /absolute/path/to/squidex-mcp-<your-platform>
 ```
 
-Point your MCP client at `bun run src/index.ts` in this directory (any MCP-compliant client — the config section will differ by client, but the command is the same).
+`--scope user` makes it available in every project, not just the current one.
 
-## Profiles
+**Claude Desktop:** edit *Claude Desktop's own* config file for your OS (this is Claude Desktop's launcher config, not `squidex.config.json` from [Profiles](#profiles-multiple-squidex-instances) below — the `env` block here just sets environment variables for the process Claude Desktop spawns) —
+macOS: `~/Library/Application Support/Claude/claude_desktop_config.json` ·
+Windows: `%APPDATA%\Claude\claude_desktop_config.json` ·
+Linux: `~/.config/Claude/claude_desktop_config.json`
 
-`squidex.config.json` holds one or more named Squidex targets, plus a request timeout shared by all of them:
+```json
+{
+  "mcpServers": {
+    "squidex": {
+      "command": "/absolute/path/to/squidex-mcp-<your-platform>",
+      "env": {
+        "SQUIDEX_URL": "https://cloud.squidex.io",
+        "SQUIDEX_APP": "your-app-name",
+        "SQUIDEX_CLIENT_ID": "your-app-name:default",
+        "SQUIDEX_CLIENT_SECRET": "your-client-secret"
+      }
+    }
+  }
+}
+```
+
+Restart the client after editing.
+
+### 4. Try it
+
+Ask your assistant something like *"List the content schemas in my Squidex app"*. If it replies with your schemas, it's working.
+
+## Profiles (multiple Squidex instances)
+
+If you need more than one Squidex app/instance (e.g. prod + staging) reachable from the same server, use a `squidex.config.json` file instead of env vars:
 
 ```jsonc
 {
@@ -34,35 +113,24 @@ Point your MCP client at `bun run src/index.ts` in this directory (any MCP-compl
 }
 ```
 
-Every tool accepts an optional `profile` parameter to pick which Squidex app/instance to target — no server restart needed to switch. The file is re-read on every call. `squidex.config.json` is gitignored; commit `squidex.config.example.json` instead.
+Every tool accepts an optional `profile` parameter to pick which target to use — no server restart needed to switch. The file is re-read on every call. `requestTimeoutMs` (default 15000) applies to every Squidex HTTP request across all profiles.
 
-`requestTimeoutMs` (default 15000) applies to every Squidex HTTP request (content/schema calls and the OAuth token endpoint) — a value here applies uniformly across all profiles, it isn't set per-profile.
-
-If no config file is found, a single implicit `default` profile is built from `SQUIDEX_URL` / `SQUIDEX_APP` / `SQUIDEX_CLIENT_ID` / `SQUIDEX_CLIENT_SECRET` env vars.
-
-## Tools
-
-| Tool | Purpose |
-|---|---|
-| `schema_list` | List content schemas in the app |
-| `schema_get` | Get a schema's fields, including localization mode |
-| `content_query` | Query content items (OData-style `filter`/`top`/`skip`/`orderby`/`search`) |
-| `content_get` | Get a single content item |
-| `content_create` | Create a content item |
-| `content_update` | Replace a content item's data |
-| `content_delete` | Delete a content item |
-| `content_change_status` | Change workflow status (Draft/Published/Archived) |
-| `profile_list` | List configured profile names (no secrets) |
+By default the server looks for `squidex.config.json` in its current working directory; point it elsewhere with the `SQUIDEX_MCP_CONFIG` env var (absolute path recommended, since the client process's working directory isn't always predictable). If no config file is found at all, the four `SQUIDEX_*` env vars from Quick start are used as a single implicit `default` profile.
 
 Content field data must already be shaped per Squidex's partitioning (`{ "title": { "iv": "..." } }` for invariant fields, `{ "en": "...", "de": "..." }` for localized ones) — call `schema_get` first to see each field's mode.
 
 ## Development
 
 ```bash
-bun test              # unit tests (config, token cache, query builder — no live Squidex needed)
-bun run typecheck      # tsc --noEmit
-bun run scripts/smoke.ts [--profile <name>]   # manual smoke test against a real Squidex instance
+bun install
+bun test               # unit tests (config, token cache, query builder — no live Squidex needed)
+bun run typecheck       # tsc --noEmit
+bun run dev             # start the server with --watch, for local development
 ```
+
+Point your MCP client at `bun run src/index.ts` in this directory instead of a downloaded binary while developing.
+
+To build standalone binaries locally: `bun run build:binary` compiles for your current OS only (`dist/squidex-mcp`); `bun run build:binary:all` cross-compiles all five release targets at once (`dist/squidex-mcp-<platform>`) — the same command [`release.yml`](.github/workflows/release.yml) runs when a tag is pushed.
 
 ### Local Squidex for end-to-end testing
 
@@ -77,3 +145,12 @@ bun run scripts/smoke.ts                # or drive the tools directly via an MCP
 `e2e-bootstrap.ts` is idempotent — safe to re-run against an already-bootstrapped instance. It authenticates as the `root` superadmin client (created via `IDENTITY__ADMINCLIENTID`/`IDENTITY__ADMINCLIENTSECRET` in `docker-compose.yml`, dev-only credentials, not real secrets) and writes a `local` profile into `squidex.config.json`.
 
 `docker compose down` stops it; add `-v` to also wipe the Mongo volume (fresh Squidex on next `up`).
+
+### Releasing
+
+Pushing a tag matching `v*.*.*` triggers [`.github/workflows/release.yml`](.github/workflows/release.yml): it runs the test suite, cross-compiles standalone binaries for Linux/macOS/Windows, and publishes them to a GitHub Release.
+
+```bash
+git tag v0.2.0
+git push origin v0.2.0
+```
