@@ -1,0 +1,18 @@
+{
+  "defaultProfile": "prod",
+  "requestTimeoutMs": 15000,
+  "profiles": {
+    "prod": {
+      "url": "https://cloud.squidex.io",
+      "app": "your-app-name",
+      "clientId": "your-app-name:default",
+      "clientSecret": "your-client-secret"
+    },
+    "staging": {
+      "url": "https://cloud.squidex.io",
+      "app": "your-app-name-staging",
+      "clientId": "your-app-name-staging:default",
+      "clientSecret": "your-client-secret"
+    }
+  }
+}

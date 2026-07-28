@@ -1,0 +1,27 @@
+services:
+  mongo:
+    image: mongo:7
+    volumes:
+      - squidex_mongo_data:/data/db
+    restart: unless-stopped
+
+  squidex:
+    image: squidex/squidex:7.23.0
+    environment:
+      - URLS__BASEURL=http://localhost:8085
+      - EVENTSTORE__TYPE=MongoDb
+      - EVENTSTORE__MONGODB__CONFIGURATION=mongodb://mongo
+      - STORE__MONGODB__CONFIGURATION=mongodb://mongo
+      - IDENTITY__ADMINEMAIL=admin@squidex.local
+      - IDENTITY__ADMINPASSWORD=SquidexAdmin123!
+      # Creates a superadmin OAuth client for automation/local testing — see squidex.config.local.json.
+      - IDENTITY__ADMINCLIENTID=root
+      - IDENTITY__ADMINCLIENTSECRET=SquidexRootSecret123!
+    ports:
+      - "8085:80"
+    depends_on:
+      - mongo
+    restart: unless-stopped
+
+volumes:
+  squidex_mongo_data:
