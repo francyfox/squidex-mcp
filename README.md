@@ -154,3 +154,5 @@ Pushing a tag matching `v*.*.*` triggers [`.github/workflows/release.yml`](.gith
 git tag v0.2.0
 git push origin v0.2.0
 ```
+
+.
